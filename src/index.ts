@@ -15,7 +15,7 @@ import { handleCommand } from './commands/router.js'
 import { SingleOrchestrator } from './orchestrator/single.js'
 import { ReviewOrchestrator } from './orchestrator/review.js'
 import { DebateOrchestrator } from './orchestrator/debate.js'
-import { RootAgentRuntime } from './root-agent/runtime.js'
+import { RootAgentObserver } from './root-agent/observer.js'
 
 export interface StartBridgeOptions {
   cwd?: string
@@ -42,17 +42,8 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
   const single = new SingleOrchestrator(api, config, executor)
   const review = new ReviewOrchestrator(single, codex)
   const debate = new DebateOrchestrator(single, claude, codex)
+  const rootAgent = new RootAgentObserver(config, api)
   const defaultCwd = options.cwd ?? process.cwd()
-  const rootAgent = new RootAgentRuntime({
-    config,
-    api,
-    single,
-    sessions,
-    workspaces,
-    workers: { claude, codex },
-    defaultCwd,
-  })
-  rootAgent.startScheduler()
   const queue = new PendingQueue<InboundMessage>(600, (scopeId, batch) => {
     void processBatch(scopeId, batch)
   })
@@ -80,13 +71,13 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
         return
       }
       if (message.chatType === 'group' && security.require_mention_in_group && !message.mentionsBot && !message.threadId) {
-        await rootAgent.handleSilentGroupMessage(message, security)
+        await rootAgent.observe(message, security)
         return
       }
 
       await ackMessage(message)
 
-      const commandResult = await handleCommand(message, { api, access, workspaces, sessions, executor, defaultCwd, rootAgent })
+      const commandResult = await handleCommand(message, { api, access, workspaces, sessions, executor, defaultCwd })
       if (commandResult.handled) return
 
       const scopeId = scopeIdFor(message)
@@ -94,8 +85,6 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
         await processBatch(scopeId, [message])
         return
       }
-
-      if (await rootAgent.handleAddressedMessage(message, security)) return
 
       queue.push(scopeId, message)
     },
@@ -184,7 +173,6 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
   console.error(`domain: ${config.feishu.domain}`)
 
   const shutdown = () => {
-    rootAgent.stopScheduler()
     for (const handle of executor.activeRuns.list()) {
       void handle.run.stop()
     }

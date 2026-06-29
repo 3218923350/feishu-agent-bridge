@@ -10,7 +10,6 @@
 - 普通消息默认交给 Claude Code 处理，作为主会话轨道 `mainTrack`。
 - `/review` 会交给 Codex 处理，作为审查轨道 `reviewTrack`。
 - `/debate` 会让 Claude Code 和 Codex 轮流讨论同一个问题。
-- Root Agent 可常驻观察已授权群聊：未 @ 时只记录、分类和必要时私聊 owner；被 @ 时由 Root Agent 判断直接回复或委派给 Codex/Claude Code。
 - 按飞书话题/thread 维持独立 session，同一个话题里的追问会继续复用上下文。
 - 本地保存配置、权限、工作区和 session 元数据。
 - 默认按 owner/admin/user/group 做访问控制。
@@ -103,16 +102,6 @@ ws client ready
 | `/new chat [名称]` | 仅私聊 | 创建一个项目群，把当前用户加入群，并把这个群绑定到当前工作目录。 |
 | `/stop` | 当前话题/thread | 停止当前话题里正在运行的本地 agent 进程。 |
 | `/status` | 私聊或已授权群 | 显示活跃任务数、工作区数量、session 数量和最近 session 信息。 |
-| `/agent status` | 私聊或已授权群 | 查看 Root Agent 状态、待办、work order、记忆数量和最近活动。 |
-| `/agent policy` | 私聊或已授权群 | 查看当前会话的 Root Agent 观察策略。 |
-| `/agent observe on\|off` | 私聊或已授权群 | 开启或关闭当前会话的静默观察。 |
-| `/todo list` | 私聊或已授权群 | 查看 Root Agent TODO。 |
-| `/todo add <内容> at <ISO时间>` | 私聊或已授权群 | 添加一个定时 TODO。 |
-| `/todo done <id>` | 私聊或已授权群 | 标记 TODO 完成。也支持 `claim`、`cancel`。 |
-| `/memory search <关键词>` | 私聊或已授权群 | 查询 Root Agent 本地记忆索引。 |
-| `/memory write <路径> <内容>` | 私聊或已授权群 | 手动写入一条 Root Agent 记忆。 |
-| `/delegate codex <任务>` | 私聊或已授权群 | 显式让 Root Agent 把任务派给 Codex。 |
-| `/delegate claude <任务>` | 私聊或已授权群 | 显式让 Root Agent 把任务派给 Claude Code。 |
 | `/cd <路径>` | 仅私聊 | 设置当前用户的工作目录。路径必须在本机存在。 |
 | `/ls` | 私聊 | 查看当前用户的工作目录。 |
 | `/ws list` | 私聊或已授权群 | 查看保存过的工作区。 |
@@ -202,7 +191,7 @@ codex exec --json -s danger-full-access --dangerously-bypass-approvals-and-sandb
 
 ## 主动员工 Agent 设计
 
-设计说明见 [docs/proactive-agent-design.zh.md](docs/proactive-agent-design.zh.md)。这份文档整理了 Root Agent 常驻循环、飞书静默观察、inbox/outbox、TODO 调度、上下文压缩、记忆系统和 worker 委派机制。
+项目下一阶段的设计草案见 [docs/proactive-agent-design.zh.md](docs/proactive-agent-design.zh.md)。这份文档整理了 Root Agent 常驻循环、飞书静默观察、inbox/outbox、TODO 调度、上下文压缩、记忆系统和 worker 委派机制。
 
 ## 权限模型
 
@@ -236,13 +225,6 @@ codex exec --json -s danger-full-access --dangerously-bypass-approvals-and-sandb
 | `access.json` | 运行时更新的 owner/admin/user/group 权限。 |
 | `workspaces.json` | 用户当前目录、命名工作区、群和项目路径绑定。 |
 | `sessions.json` | 飞书话题和 Claude/Codex session 的绑定关系。 |
-| `observer-inbox.jsonl` | Root Agent 观察到的群消息和被 @ 消息。 |
-| `activity.jsonl` | Root Agent 决策、提醒、委派、上下文摘要等活动流水。 |
-| `context-summaries.jsonl` | Root Agent 每次事件循环后的短摘要。 |
-| `todos.json` | Root Agent 的定时任务。 |
-| `work-orders.json` | Root Agent 委派给 Codex/Claude Code 的工作单。 |
-| `memory-index.json` | Root Agent 本地记忆索引。 |
-| `root-policies.json` | 当前会话的 Root Agent 策略覆盖项，例如静默观察开关。 |
 
 ## 已读表情
 
@@ -255,19 +237,9 @@ codex exec --json -s danger-full-access --dangerously-bypass-approvals-and-sandb
 ack_reaction_emoji = "OK" # 留空字符串 "" 可关闭
 ```
 
-## Root Agent 常驻中枢
+## Root Agent 静默观察
 
-Root Agent 是常驻主 Agent。开启后，已授权群里的未 @ 消息不会触发群内回复，但会写入本地 `observer-inbox.jsonl`，再由 Root Agent 结合策略、记忆和上下文判断是否需要私聊 owner。被 @ 时，Root Agent 会直接处理：可以简短回复，也可以创建 work order 委派给 Codex 或 Claude Code。
-
-Root Agent 有自己的本地工作台：
-
-- `observer-inbox.jsonl`：所有进入 Root Agent 的观察事件。
-- `activity.jsonl`：每次决策、提醒、回复、委派和摘要。
-- `context-summaries.jsonl`：事件级上下文压缩结果。
-- `todos.json`：定时 TODO，由常驻 scheduler 处理。
-- `work-orders.json`：委派给 worker agent 的工作单。
-- `memory-index.json`：可检索的长期记忆索引。
-- `root-policies.json`：群/会话级策略覆盖项。
+Root Agent 是下一阶段的常驻主 Agent。开启后，已授权群里的未 @ 消息不会触发群内回复，但会写入本地 `observer-inbox.jsonl`，并由 Root Agent 判断是否需要私聊 owner。第一版先使用规则版 attention classifier：命中 owner 别名、@ owner 或关注关键词时，按阈值私聊 owner。
 
 示例配置：
 

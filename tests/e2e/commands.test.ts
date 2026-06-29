@@ -65,42 +65,6 @@ describe('Feishu command E2E routing', () => {
     expect(api.cards.at(-1)?.card).toMatchObject({ header: { title: { content: 'Status' } } })
   })
 
-  it('handles Root Agent commands end to end through the command router', async () => {
-    const cwd = await mkdtemp(join(tmpdir(), 'fab-e2e-'))
-    const api = new FakeApi()
-    const activeRuns = new FakeActiveRuns()
-    const rootAgent = new FakeRootAgent()
-    const ctx = createContext({ api, activeRuns, defaultCwd: cwd, rootAgent })
-
-    await route('/agent status', ctx)
-    expect(api.texts.at(-1)?.content).toContain('root agent: enabled')
-
-    await route('/agent policy', ctx)
-    expect(api.texts.at(-1)?.content).toContain('silent observe')
-
-    await route('/agent observe off', ctx)
-    expect(rootAgent.silentObserve).toBe(false)
-
-    await route('/todo add 跟进开源发布 at 2026-06-30T09:30:00+08:00', ctx)
-    expect(api.texts.at(-1)?.content).toMatch(/^已创建 TODO todo_/)
-
-    await route('/todo list', ctx)
-    expect(api.texts.at(-1)?.content).toContain('跟进开源发布')
-
-    await route(`/todo done ${rootAgent.todos.rows[0]!.id}`, ctx)
-    expect(rootAgent.todos.rows[0]!.status).toBe('done')
-
-    await route('/memory write 01_Profile/owner 用户准备开源飞书 Agent 桥接项目', ctx)
-    expect(api.texts.at(-1)?.content).toContain('已写入记忆')
-
-    await route('/memory search 开源', ctx)
-    expect(api.texts.at(-1)?.content).toContain('用户准备开源')
-
-    await route('/delegate codex 检查当前仓库测试', ctx)
-    expect(rootAgent.delegations).toEqual([{ worker: 'codex', task: '检查当前仓库测试' }])
-    expect(api.texts.at(-1)?.content).toContain('已派发给 codex')
-  })
-
   it('handles private-only and group-specific commands', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'fab-e2e-'))
     const api = new FakeApi()
@@ -173,7 +137,7 @@ function message(text: string, overrides: Partial<InboundMessage> = {}): Inbound
   }
 }
 
-function createContext(input: { api: FakeApi; activeRuns: FakeActiveRuns; defaultCwd: string; rootAgent?: any }): TestContext {
+function createContext(input: { api: FakeApi; activeRuns: FakeActiveRuns; defaultCwd: string }): TestContext {
   return {
     api: input.api,
     access: new FakeAccess(),
@@ -181,7 +145,6 @@ function createContext(input: { api: FakeApi; activeRuns: FakeActiveRuns; defaul
     sessions: new FakeSessions(),
     executor: { activeRuns: input.activeRuns },
     defaultCwd: input.defaultCwd,
-    rootAgent: input.rootAgent,
   }
 }
 
@@ -192,7 +155,6 @@ interface TestContext {
   sessions: FakeSessions
   executor: { activeRuns: FakeActiveRuns }
   defaultCwd: string
-  rootAgent?: any
 }
 
 class FakeApi {
@@ -326,51 +288,5 @@ class FakeSingle {
   async runTrack(input: { scope: ThreadScope; track: TrackState; agent: any; prompt: string; replyToMessageId: string }) {
     this.calls.push(input)
     return { ...input.track, lastRunId: `run-${this.calls.length}` }
-  }
-}
-
-class FakeRootAgent {
-  delegations: Array<{ worker: string; task: string }> = []
-  silentObserve = true
-  todos = {
-    rows: [] as Array<{ id: string; status: string; at: string; text: string }>,
-    list: async () => this.todos.rows,
-    add: async (input: { text: string; at: string }) => {
-      const todo = { id: `todo_${this.todos.rows.length + 1}`, status: 'pending', at: input.at, text: input.text }
-      this.todos.rows.push(todo)
-      return todo
-    },
-    update: async (id: string, patch: { status: string }) => {
-      const todo = this.todos.rows.find((row) => row.id === id)
-      if (!todo) return undefined
-      todo.status = patch.status
-      return todo
-    },
-  }
-  memory = {
-    rows: [] as Array<{ id: string; path: string; abstract: string }>,
-    search: async (query: string) => this.memory.rows.filter((row) => `${row.path}\n${row.abstract}`.includes(query)),
-    add: async (input: { path: string; abstract: string }) => {
-      const memory = { id: `mem_${this.memory.rows.length + 1}`, path: input.path, abstract: input.abstract }
-      this.memory.rows.push(memory)
-      return memory
-    },
-  }
-
-  async statusText() {
-    return 'root agent: enabled'
-  }
-
-  async policyText() {
-    return `silent observe for this chat: ${this.silentObserve ? 'on' : 'off'}`
-  }
-
-  async setSilentObserve(_chatId: string, enabled: boolean) {
-    this.silentObserve = enabled
-  }
-
-  async delegate(input: { worker: string; task: string }) {
-    this.delegations.push({ worker: input.worker, task: input.task })
-    return { id: 'wo_1' }
   }
 }
