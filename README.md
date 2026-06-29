@@ -178,7 +178,7 @@ codex exec --json -s danger-full-access --dangerously-bypass-approvals-and-sandb
 - 在当前话题里启动双 agent 讨论。
 - 奇数轮使用 Claude Code 的 `mainTrack`。
 - 偶数轮使用 Codex 的 `reviewTrack`。
-- 当前实现最多允许 30 轮交替。
+- 默认最多 4 轮交替，可通过 `defaults.max_debate_rounds` 调整。
 - 每一轮都会更新对应 track 的 session 状态。
 
 示例：

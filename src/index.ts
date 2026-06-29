@@ -104,6 +104,10 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
     'im.message.message_read_v1': async () => {
       return {}
     },
+
+    'im.message.reaction.created_v1': async () => {
+      return {}
+    },
   })
 
   async function ackMessage(message: InboundMessage): Promise<void> {
@@ -129,7 +133,7 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
       }
       if (text.startsWith('/debate')) {
         const query = text.replace(/^\/debate\s*/, '').trim() || 'Debate the current task.'
-        const next = await debate.run(scope, query, first.threadId ?? first.messageId, 30)
+        const next = await debate.run(scope, query, first.threadId ?? first.messageId, config.defaults.max_debate_rounds)
         await sessions.upsert(next)
         return
       }

@@ -17,6 +17,7 @@ export interface BridgeConfig {
   defaults: {
     agent: 'claude' | 'codex'
     max_concurrent_sessions: number
+    max_debate_rounds: number
     idle_timeout_minutes: number
     default_permission: 'full'
     claude: AgentDefaults
@@ -42,6 +43,7 @@ export const DEFAULT_CONFIG: BridgeConfig = {
   defaults: {
     agent: 'claude',
     max_concurrent_sessions: 10,
+    max_debate_rounds: 4,
     idle_timeout_minutes: 0,
     default_permission: 'full',
     claude: { model: 'opus', extra_args: [] },

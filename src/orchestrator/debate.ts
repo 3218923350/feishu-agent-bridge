@@ -11,7 +11,7 @@ export class DebateOrchestrator {
     private readonly codex: AgentAdapter,
   ) {}
 
-  async run(scope: ThreadScope, query: string, replyToMessageId: string, maxRounds = 30): Promise<ThreadScope> {
+  async run(scope: ThreadScope, query: string, replyToMessageId: string, maxRounds = 4): Promise<ThreadScope> {
     let current = scope
     const history: Array<{ agent: string; text: string }> = []
     for (let turn = 1; turn <= maxRounds; turn++) {
@@ -31,4 +31,3 @@ function buildPrompt(query: string, history: Array<{ agent: string; text: string
   const prior = history.map((item) => `${item.agent}: ${item.text}`).join('\n')
   return `${PREAMBLE}\n\nUser request:\n${query}\n\nPrior turns:\n${prior || '(none)'}\n\nTurn ${turn}: continue the debate.`
 }
-
