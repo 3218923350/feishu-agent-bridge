@@ -16,7 +16,7 @@ export class CodexAdapter implements AgentAdapter {
     const args = ['exec', '--json', '-s', 'danger-full-access', '--dangerously-bypass-approvals-and-sandbox']
     if (opts.model) args.push('-m', opts.model)
     if (opts.extraArgs) args.push(...opts.extraArgs)
-    if (opts.threadId) args.push('resume', '--id', opts.threadId, opts.prompt)
+    if (opts.threadId) args.push('resume', opts.threadId, opts.prompt)
     else args.push(opts.prompt)
 
     const { proc, runBase } = spawnAgentProcess('codex', args, opts)
@@ -34,4 +34,3 @@ async function* mapCodexEvents(raws: AsyncIterable<any>): AsyncIterable<AgentEve
     if (event) yield event
   }
 }
-

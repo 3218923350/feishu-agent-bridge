@@ -46,6 +46,16 @@ export class FeishuApi {
     return result.data?.chat_id ?? ''
   }
 
+  async getBotOpenId(): Promise<string> {
+    const token = await this.getToken()
+    const result = await this.request('/open-apis/bot/v3/info', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (result.code !== 0) throw new Error(`bot info failed: ${result.code} ${result.msg}`)
+    return result.bot?.open_id ?? result.data?.open_id ?? ''
+  }
+
   private async sendMessage(chatId: string, msgType: string, content: string): Promise<string> {
     const token = await this.getToken()
     const result = await this.request('/open-apis/im/v1/messages?receive_id_type=chat_id', {
@@ -86,4 +96,3 @@ export class FeishuApi {
     return resp.json()
   }
 }
-

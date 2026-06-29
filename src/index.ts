@@ -27,6 +27,10 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
   }
 
   const api = new FeishuApi(config.feishu)
+  const botOpenId = await api.getBotOpenId().catch((error) => {
+    console.error(`[feishu] bot info failed; group mention filtering disabled: ${error instanceof Error ? error.message : String(error)}`)
+    return ''
+  })
   const access = new AccessStore(config)
   const workspaces = new WorkspaceStore()
   const sessions = new SessionStore()
@@ -44,7 +48,7 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
 
   const eventDispatcher = new Lark.EventDispatcher({}).register({
     'im.message.receive_v1': async (data: any) => {
-      const message = extractMessage(data)
+      const message = extractMessage(data, botOpenId)
       if (!message) return
 
       const security = await access.snapshot()

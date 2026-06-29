@@ -27,7 +27,7 @@ export function extractMessage(data: any, botOpenId?: string): InboundMessage | 
   const content = parseContent(msg.content)
   const text = extractText(msg.message_type, content)
   const mentions = Array.isArray(msg.mentions) ? msg.mentions : []
-  const mentionsBot = botOpenId ? mentions.some((m: any) => m.id?.open_id === botOpenId) : true
+  const mentionsBot = msg.chat_type === 'p2p' || Boolean(botOpenId && mentions.some((m: any) => m.id?.open_id === botOpenId))
   const rootId = msg.root_id ?? msg.thread_id ?? undefined
   const threadId = rootId && rootId !== msg.message_id ? rootId : undefined
 
@@ -80,4 +80,3 @@ function extractText(messageType: string, content: any): string {
   if (messageType === 'file') return '[file]'
   return `[${messageType}]`
 }
-
