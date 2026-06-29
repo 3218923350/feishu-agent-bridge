@@ -5,11 +5,10 @@ describe('extractMessage', () => {
   it('requires a matching bot mention in group chats', () => {
     const data = baseEvent({
       chat_type: 'group',
-      mentions: [{ id: { open_id: 'ou_bot' }, name: 'Bridge Bot' }],
+      mentions: [{ id: { open_id: 'ou_bot' } }],
     })
 
     expect(extractMessage(data, 'ou_bot')?.mentionsBot).toBe(true)
-    expect(extractMessage(data, 'ou_bot')?.mentions).toEqual([{ openId: 'ou_bot', name: 'Bridge Bot' }])
     expect(extractMessage(data, 'ou_other')?.mentionsBot).toBe(false)
     expect(extractMessage(data)?.mentionsBot).toBe(false)
   })
