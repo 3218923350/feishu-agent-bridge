@@ -26,6 +26,7 @@ export interface BridgeConfig {
     update_interval_ms: number
     show_thinking: boolean
     show_token_usage: boolean
+    ack_reaction_emoji: string
   }
   security: {
     owner_open_id: string
@@ -46,7 +47,7 @@ export const DEFAULT_CONFIG: BridgeConfig = {
     claude: { model: 'opus', extra_args: [] },
     codex: { extra_args: [] },
   },
-  display: { update_interval_ms: 1500, show_thinking: true, show_token_usage: true },
+  display: { update_interval_ms: 1500, show_thinking: true, show_token_usage: true, ack_reaction_emoji: 'OK' },
   security: {
     owner_open_id: '',
     allowed_users: [],
@@ -55,4 +56,3 @@ export const DEFAULT_CONFIG: BridgeConfig = {
     require_mention_in_group: true,
   },
 }
-

@@ -5,6 +5,7 @@
 ## 能做什么
 
 - 通过飞书/Lark 官方长连接 SDK 接收机器人消息事件。
+- 收到可处理消息后先添加一个表情回复，表示机器人已经开始处理。
 - 在飞书里用交互卡片展示本地 agent 的运行状态和输出。
 - 普通消息默认交给 Claude Code 处理，作为主会话轨道 `mainTrack`。
 - `/review` 会交给 Codex 处理，作为审查轨道 `reviewTrack`。
@@ -220,6 +221,17 @@ codex exec --json -s danger-full-access --dangerously-bypass-approvals-and-sandb
 | `access.json` | 运行时更新的 owner/admin/user/group 权限。 |
 | `workspaces.json` | 用户当前目录、命名工作区、群和项目路径绑定。 |
 | `sessions.json` | 飞书话题和 Claude/Codex session 的绑定关系。 |
+
+## 已读表情
+
+默认情况下，机器人收到一条会被处理的消息后，会先给原消息添加 `OK` 表情，表示已经开始看了。这个动作是 best-effort：如果飞书权限、表情类型或网络导致添加失败，不会影响后续卡片回复。
+
+可以在 `config.toml` 里调整或关闭：
+
+```toml
+[display]
+ack_reaction_emoji = "OK" # 留空字符串 "" 可关闭
+```
 
 ## macOS 常驻运行
 

@@ -175,6 +175,8 @@ class FakeApi {
     this.createdGroups.push({ name, userOpenIds })
     return 'oc_created'
   }
+
+  async reactToMessage() {}
 }
 
 class FakeAccess {

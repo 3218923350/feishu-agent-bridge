@@ -73,6 +73,8 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
         return
       }
 
+      await ackMessage(message)
+
       const commandResult = await handleCommand(message, { api, access, workspaces, sessions, executor, defaultCwd })
       if (commandResult.handled) return
 
@@ -103,6 +105,14 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
       return {}
     },
   })
+
+  async function ackMessage(message: InboundMessage): Promise<void> {
+    const emoji = config.display.ack_reaction_emoji
+    if (!emoji) return
+    await api.reactToMessage(message.messageId, emoji).catch((error) => {
+      console.error(`[feishu] ack reaction failed: ${error instanceof Error ? error.message : String(error)}`)
+    })
+  }
 
   async function processBatch(scopeId: string, batch: InboundMessage[]): Promise<void> {
     const first = batch[0]

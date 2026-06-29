@@ -35,6 +35,16 @@ export class FeishuApi {
     if (result.code !== 0) console.error(`[feishu] update card failed: ${result.code} ${result.msg}`)
   }
 
+  async reactToMessage(messageId: string, emojiType: string): Promise<void> {
+    const token = await this.getToken()
+    const result = await this.request(`/open-apis/im/v1/messages/${messageId}/reactions`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({ reaction_type: { emoji_type: emojiType } }),
+    })
+    if (result.code !== 0) console.error(`[feishu] react failed: ${result.code} ${result.msg}`)
+  }
+
   async createGroup(name: string, userOpenIds: string[]): Promise<string> {
     const token = await this.getToken()
     const result = await this.request('/open-apis/im/v1/chats', {
