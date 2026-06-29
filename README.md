@@ -189,6 +189,10 @@ codex exec --json -s danger-full-access --dangerously-bypass-approvals-and-sandb
 
 运行中可以用 `/stop` 或卡片上的停止按钮中断。
 
+## 主动员工 Agent 设计
+
+项目下一阶段的设计草案见 [docs/proactive-agent-design.zh.md](docs/proactive-agent-design.zh.md)。这份文档整理了 Root Agent 常驻循环、飞书静默观察、inbox/outbox、TODO 调度、上下文压缩、记忆系统和 worker 委派机制。
+
 ## 权限模型
 
 权限是 owner-first：
@@ -232,6 +236,38 @@ codex exec --json -s danger-full-access --dangerously-bypass-approvals-and-sandb
 [display]
 ack_reaction_emoji = "OK" # 留空字符串 "" 可关闭
 ```
+
+## Root Agent 静默观察
+
+Root Agent 是下一阶段的常驻主 Agent。开启后，已授权群里的未 @ 消息不会触发群内回复，但会写入本地 `observer-inbox.jsonl`，并由 Root Agent 判断是否需要私聊 owner。第一版先使用规则版 attention classifier：命中 owner 别名、@ owner 或关注关键词时，按阈值私聊 owner。
+
+示例配置：
+
+```toml
+[root_agent]
+enabled = true
+owner_open_id = "ou_xxx"
+owner_aliases = ["王毅"]
+
+[root_agent.model]
+provider = "bedrock"
+model = "us.anthropic.claude-sonnet-4-6"
+region = "us-east-1"
+max_tokens = 16384
+
+[root_agent.model.env]
+AWS_ACCESS_KEY_ID = "${AWS_ACCESS_KEY_ID}"
+AWS_SECRET_ACCESS_KEY = "${AWS_SECRET_ACCESS_KEY}"
+
+[observe]
+enabled = true
+silent_group_observe = true
+dm_owner_when_attention_score_above = 0.75
+max_owner_dm_per_day = 8
+attention_keywords = ["主动员工 Agent", "feishu-agent-bridge"]
+```
+
+真实密钥只放环境变量或本机私有配置，不要提交到仓库。
 
 ## macOS 常驻运行
 

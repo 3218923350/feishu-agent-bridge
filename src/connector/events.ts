@@ -10,6 +10,7 @@ export interface InboundMessage {
   text: string
   senderId: string
   mentionsBot: boolean
+  mentions: Array<{ openId: string; name: string }>
   attachments: CachedAttachment[]
 }
 
@@ -28,6 +29,10 @@ export function extractMessage(data: any, botOpenId?: string): InboundMessage | 
   const text = extractText(msg.message_type, content)
   const mentions = Array.isArray(msg.mentions) ? msg.mentions : []
   const mentionsBot = msg.chat_type === 'p2p' || Boolean(botOpenId && mentions.some((m: any) => m.id?.open_id === botOpenId))
+  const parsedMentions = mentions.map((mention: any) => ({
+    openId: String(mention.id?.open_id ?? ''),
+    name: String(mention.name ?? mention.id?.open_id ?? ''),
+  })).filter((mention: { openId: string; name: string }) => mention.openId || mention.name)
   const rootId = msg.root_id ?? msg.thread_id ?? undefined
   const threadId = rootId && rootId !== msg.message_id ? rootId : undefined
 
@@ -39,6 +44,7 @@ export function extractMessage(data: any, botOpenId?: string): InboundMessage | 
     text,
     senderId,
     mentionsBot,
+    mentions: parsedMentions,
     attachments: [],
   }
 }

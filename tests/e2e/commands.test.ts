@@ -131,6 +131,7 @@ function message(text: string, overrides: Partial<InboundMessage> = {}): Inbound
     text,
     senderId: 'ou_owner',
     mentionsBot: true,
+    mentions: [],
     attachments: [],
     ...overrides,
   }

@@ -15,6 +15,7 @@ import { handleCommand } from './commands/router.js'
 import { SingleOrchestrator } from './orchestrator/single.js'
 import { ReviewOrchestrator } from './orchestrator/review.js'
 import { DebateOrchestrator } from './orchestrator/debate.js'
+import { RootAgentObserver } from './root-agent/observer.js'
 
 export interface StartBridgeOptions {
   cwd?: string
@@ -41,6 +42,7 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
   const single = new SingleOrchestrator(api, config, executor)
   const review = new ReviewOrchestrator(single, codex)
   const debate = new DebateOrchestrator(single, claude, codex)
+  const rootAgent = new RootAgentObserver(config, api)
   const defaultCwd = options.cwd ?? process.cwd()
   const queue = new PendingQueue<InboundMessage>(600, (scopeId, batch) => {
     void processBatch(scopeId, batch)
@@ -57,10 +59,6 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
         security.owner_open_id = message.senderId
         await api.replyText(message.messageId, '已将你设为 owner，之后可用 /invite user 或 /invite group 开放访问。')
       }
-      if (message.chatType === 'group' && security.require_mention_in_group && !message.mentionsBot && !message.threadId) {
-        return
-      }
-
       const decision = canUseBridge(security, {
         senderId: message.senderId,
         chatId: message.chatId,
@@ -70,6 +68,10 @@ export async function startBridge(options: StartBridgeOptions = {}): Promise<voi
         if (message.chatType === 'group' && message.mentionsBot) {
           await api.replyText(message.messageId, '这个群还没有开放，请让 owner/admin 执行 /invite group')
         }
+        return
+      }
+      if (message.chatType === 'group' && security.require_mention_in_group && !message.mentionsBot && !message.threadId) {
+        await rootAgent.observe(message, security)
         return
       }
 

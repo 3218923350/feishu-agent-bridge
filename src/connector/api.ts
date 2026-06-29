@@ -13,6 +13,10 @@ export class FeishuApi {
     return this.sendMessage(chatId, 'text', JSON.stringify({ text }))
   }
 
+  async sendTextToOpenId(openId: string, text: string): Promise<string> {
+    return this.sendMessageTo('open_id', openId, 'text', JSON.stringify({ text }))
+  }
+
   async sendCard(chatId: string, card: object): Promise<string> {
     return this.sendMessage(chatId, 'interactive', JSON.stringify(card))
   }
@@ -67,11 +71,15 @@ export class FeishuApi {
   }
 
   private async sendMessage(chatId: string, msgType: string, content: string): Promise<string> {
+    return this.sendMessageTo('chat_id', chatId, msgType, content)
+  }
+
+  private async sendMessageTo(receiveIdType: 'chat_id' | 'open_id', receiveId: string, msgType: string, content: string): Promise<string> {
     const token = await this.getToken()
-    const result = await this.request('/open-apis/im/v1/messages?receive_id_type=chat_id', {
+    const result = await this.request(`/open-apis/im/v1/messages?receive_id_type=${receiveIdType}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json; charset=utf-8' },
-      body: JSON.stringify({ receive_id: chatId, msg_type: msgType, content }),
+      body: JSON.stringify({ receive_id: receiveId, msg_type: msgType, content }),
     })
     if (result.code !== 0) console.error(`[feishu] send failed: ${result.code} ${result.msg}`)
     return result.data?.message_id ?? ''
