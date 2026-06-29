@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+printf '%s\n' '{"type":"thread.started","thread_id":"fake-codex-thread"}'
+printf '%s\n' '{"type":"item.completed","item":{"type":"agent_message","text":"fake codex ok"}}'
+printf '%s\n' '{"type":"turn.completed","thread_id":"fake-codex-thread"}'

@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+printf '%s\n' '{"type":"system","subtype":"init","session_id":"fake-claude-session","cwd":"/tmp","model":"fake"}'
+printf '%s\n' '{"type":"assistant","message":{"content":[{"type":"text","text":"fake claude ok"}]}}'
+printf '%s\n' '{"type":"result","session_id":"fake-claude-session","is_error":false}'
